@@ -1,0 +1,210 @@
+@import 'leaflet/dist/leaflet.css';
+
+:root {
+  --bg-core: #070b14;
+  --bg-surface: #0f172a;
+  --bg-elevated: #1e293b;
+  --bg-highlight: #27354f;
+  --border-subtle: #1e293b;
+  --border-strong: #334155;
+  --border-active: #38bdf8;
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  --severity-critical: #ef4444;
+  --severity-critical-glow: rgba(239, 68, 68, 0.35);
+  --severity-critical-bg: rgba(239, 68, 68, 0.12);
+
+  --severity-high: #f97316;
+  --severity-high-glow: rgba(249, 115, 22, 0.3);
+  --severity-high-bg: rgba(249, 115, 22, 0.12);
+
+  --severity-medium: #eab308;
+  --severity-medium-glow: rgba(234, 179, 8, 0.25);
+  --severity-medium-bg: rgba(234, 179, 8, 0.12);
+
+  --severity-low: #10b981;
+  --severity-low-glow: rgba(16, 185, 129, 0.25);
+  --severity-low-bg: rgba(16, 185, 129, 0.12);
+
+  --accent-cyan: #06b6d4;
+  --accent-blue: #38bdf8;
+  --accent-indigo: #6366f1;
+
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  font-family: var(--font-main);
+  background-color: var(--bg-core);
+  color: var(--text-primary);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-cyan);
+}
+
+/* Monospace telemetry */
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Severity Badges & Status */
+.badge-critical {
+  background-color: var(--severity-critical-bg);
+  color: var(--severity-critical);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 10px var(--severity-critical-glow);
+}
+
+.badge-high {
+  background-color: var(--severity-high-bg);
+  color: var(--severity-high);
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  box-shadow: 0 0 8px var(--severity-high-glow);
+}
+
+.badge-medium {
+  background-color: var(--severity-medium-bg);
+  color: var(--severity-medium);
+  border: 1px solid rgba(234, 179, 8, 0.4);
+}
+
+.badge-low {
+  background-color: var(--severity-low-bg);
+  color: var(--severity-low);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+/* Pulsing Status Animation */
+@keyframes pulse-critical {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.pulse-critical {
+  animation: pulse-critical 2s infinite;
+}
+
+/* Leaflet Custom Marker Icons */
+.custom-map-marker {
+  background: transparent;
+  border: none;
+}
+
+.marker-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.marker-pin:hover {
+  transform: scale(1.25);
+  z-index: 1000 !important;
+}
+
+.marker-hospital {
+  background: #b91c1c;
+  border: 2px solid #f87171;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+}
+
+.marker-shelter {
+  background: #047857;
+  border: 2px solid #34d399;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.7);
+}
+
+.marker-infrastructure {
+  background: #d97706;
+  border: 2px solid #fbbf24;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.7);
+}
+
+.marker-selected {
+  outline: 3px solid #38bdf8;
+  box-shadow: 0 0 20px #38bdf8 !important;
+  transform: scale(1.2);
+}
+
+/* Leaflet Dark Map Overrides */
+.leaflet-container {
+  background-color: #0b1120 !important;
+  font-family: var(--font-main) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8) !important;
+}
+
+.leaflet-popup-tip {
+  background: #0f172a !important;
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px !important;
+  line-height: 1.5 !important;
+}
+
+/* Simulation / What-If Watermark Bar */
+.simulation-watermark-banner {
+  background: linear-gradient(90deg, #d97706, #b45309, #d97706);
+  background-size: 200% 100%;
+  animation: gradientShift 4s ease infinite;
+  color: #ffffff;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-size: 11px;
+  text-align: center;
+  padding: 4px 12px;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}

@@ -13,7 +13,12 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./flood_response.db"
     
     # CORS
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    ALLOWED_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://localhost:4200",
+        "http://127.0.0.1:4200",
+    ]
     
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production"
