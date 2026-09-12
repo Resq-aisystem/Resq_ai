@@ -81,7 +81,7 @@ import { RouteOption } from '../../core/models/route.model';
               </div>
 
               <div class="risk-badge font-mono" [ngClass]="'badge-' + route.riskLevel">
-                {{ route.riskLevel | uppercase }} RISK
+                {{ route.type === 'safest' ? 'LOWER COMPUTED RISK' : (route.riskLevel | uppercase) + ' RISK' }}
               </div>
             </div>
 

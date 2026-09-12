@@ -10,6 +10,12 @@ import { PriorityQueueItem, PriorityScoreBreakdown } from '../models/priority.mo
 import { ScenarioParameters, ScenarioImpactSummary, PriorityShift } from '../models/scenario.model';
 import { ProvenanceRecord } from '../models/provenance.model';
 
+import { AiIntelligenceService } from './ai-intelligence.service';
+import { AiDecisionResponse, AiActionPlan, AiEvacuationPriority, AiRouteDetail, AiScenarioResult, AiProvenance } from '../models/ai-decision.model';
+import { GeminiBriefingResponse, GeminiHealthResponse } from '../models/gemini-briefing.model';
+import { of } from 'rxjs';
+import { catchError, timeout } from 'rxjs/operators';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -17,6 +23,33 @@ export class DisasterStateService {
   private locationService = inject(LocationService);
   private alertService = inject(AlertService);
   private routingService = inject(RoutingService);
+  private aiService = inject(AiIntelligenceService);
+
+  // AI Decision Intelligence Signal
+  readonly aiDecision = signal<AiDecisionResponse | null>(null);
+  readonly aiHealthStatus = signal<any>(null);
+  readonly aiLoading = signal<boolean>(false);
+  readonly aiError = signal<string | null>(null);
+
+  // Gemini Explanation Briefing Signal
+  readonly geminiBriefing = signal<GeminiBriefingResponse | null>(null);
+  readonly geminiHealthStatus = signal<GeminiHealthResponse | null>(null);
+  readonly geminiLoading = signal<boolean>(false);
+
+  // Latency & UX Performance Signals
+  readonly resqAiDecisionLatencyMs = signal<number>(0);
+  readonly geminiBriefingLatencyMs = signal<number>(0);
+  readonly totalDashboardTimeMs = signal<number>(0);
+  readonly timeToFirstCoreIntelligenceMs = signal<number>(0);
+
+  // Real-Time Telemetry & Polling Architecture Signals
+  readonly pollingIntervalSeconds = signal<number>(30);
+  readonly nextUpdateCountdown = signal<number>(30);
+  readonly lastUpdatedTimestamp = signal<string | null>(null);
+  readonly isSyncing = signal<boolean>(false);
+  readonly isConnectionLost = signal<boolean>(false);
+  readonly hasLastKnownData = signal<boolean>(false);
+  private pollingTimerId: any = null;
 
   // Raw State Signals
   readonly locations = signal<LocationResponse[]>([]);
@@ -335,23 +368,57 @@ export class DisasterStateService {
     return records;
   });
 
-  // Initial Data Load
+  // Initial Data Load — Asynchronous non-blocking architecture
   loadAllData(): void {
+    const t0 = performance.now();
     this.loading.set(true);
+    this.aiLoading.set(true);
+    this.geminiLoading.set(false);
     this.error.set(null);
+    this.aiError.set(null);
 
+    // 1. Fetch core decision intelligence immediately (RESQ-AI + GIS Telemetry)
     forkJoin({
       locations: this.locationService.getLocations({ limit: 100 }),
-      alerts: this.alertService.getAlerts({ limit: 100 })
+      alerts: this.alertService.getAlerts({ limit: 100 }),
+      aiDecision: this.aiService.getDecisionIntelligence('Puri', 'PURI').pipe(
+        catchError(err => {
+          console.error('AI Service fetch error:', err);
+          this.aiError.set('AI SERVICE UNAVAILABLE');
+          return of(null);
+        })
+      ),
+      aiHealth: this.aiService.getHealth().pipe(
+        catchError(err => {
+          return of({ status: 'unavailable', service: 'RESQ-AI Engine', engines: {} });
+        })
+      )
     }).subscribe({
-      next: ({ locations, alerts }) => {
+      next: ({ locations, alerts, aiDecision, aiHealth }) => {
+        const coreLatency = Math.round(performance.now() - t0);
+        this.timeToFirstCoreIntelligenceMs.set(coreLatency);
+        this.resqAiDecisionLatencyMs.set(coreLatency);
+
         this.locations.set(locations);
         this.alerts.set(alerts);
-        this.loading.set(false);
+        if (aiDecision) {
+          this.aiDecision.set(aiDecision);
+        }
+        if (aiHealth) {
+          this.aiHealthStatus.set(aiHealth);
+        }
 
-        // Auto-select the highest priority location if none selected
+        const nowStr = new Date().toLocaleTimeString('en-US', { hour12: false });
+        this.lastUpdatedTimestamp.set(nowStr);
+        this.hasLastKnownData.set(true);
+        this.isConnectionLost.set(false);
+
+        // Render dashboard immediately!
+        this.loading.set(false);
+        this.aiLoading.set(false);
+
+        // Auto-select highest priority location
         if (!this.selectedLocationId() && locations.length > 0) {
-          // Find critical alert location
           const criticalAlert = alerts.find(a => a.severity === 'critical');
           if (criticalAlert) {
             this.selectLocation(criticalAlert.location_id);
@@ -359,13 +426,122 @@ export class DisasterStateService {
             this.selectLocation(locations[0].id);
           }
         }
+
+        // 2. Trigger Gemini briefing asynchronously AFTER core intelligence renders
+        this.loadGeminiBriefing(t0);
+
+        // 3. Start periodic background polling timer
+        this.startPollingLoop();
       },
       error: (err) => {
         this.error.set(err.message || 'Failed to load disaster data from backend');
         this.loading.set(false);
+        this.aiLoading.set(false);
+        this.isConnectionLost.set(true);
       }
     });
   }
+
+  // Periodic non-blocking background polling method
+  refreshLiveData(): void {
+    if (this.isSyncing()) return;
+
+    this.isSyncing.set(true);
+
+    forkJoin({
+      locations: this.locationService.getLocations({ limit: 100 }),
+      alerts: this.alertService.getAlerts({ limit: 100 }),
+      aiDecision: this.aiService.getDecisionIntelligence('Puri', 'PURI').pipe(
+        catchError(err => of(null))
+      ),
+      aiHealth: this.aiService.getHealth().pipe(
+        catchError(err => of({ status: 'unavailable', service: 'RESQ-AI Engine', engines: {} }))
+      )
+    }).subscribe({
+      next: ({ locations, alerts, aiDecision, aiHealth }) => {
+        // Update state in background without screen flicker or wiping dashboard
+        if (locations && locations.length > 0) this.locations.set(locations);
+        if (alerts && alerts.length > 0) this.alerts.set(alerts);
+        if (aiDecision) this.aiDecision.set(aiDecision);
+        if (aiHealth) this.aiHealthStatus.set(aiHealth);
+
+        const nowStr = new Date().toLocaleTimeString('en-US', { hour12: false });
+        this.lastUpdatedTimestamp.set(nowStr);
+        this.hasLastKnownData.set(true);
+        this.isConnectionLost.set(false);
+        this.isSyncing.set(false);
+        this.nextUpdateCountdown.set(this.pollingIntervalSeconds());
+      },
+      error: (err) => {
+        console.warn('Background sync error, retaining last known valid data:', err);
+        this.isConnectionLost.set(true);
+        this.isSyncing.set(false);
+        this.nextUpdateCountdown.set(this.pollingIntervalSeconds());
+      }
+    });
+  }
+
+  startPollingLoop(): void {
+    if (this.pollingTimerId) return;
+
+    this.pollingTimerId = setInterval(() => {
+      if (this.isSyncing()) return;
+
+      const remaining = this.nextUpdateCountdown() - 1;
+      if (remaining <= 0) {
+        this.nextUpdateCountdown.set(0);
+        this.refreshLiveData();
+      } else {
+        this.nextUpdateCountdown.set(remaining);
+      }
+    }, 1000);
+  }
+
+  loadGeminiBriefing(t0: number = performance.now()): void {
+    // Prevent duplicate simultaneous requests
+    if (this.geminiLoading()) {
+      return;
+    }
+
+    this.geminiLoading.set(true);
+    const tGeminiStart = performance.now();
+
+    // Fetch Gemini health & briefing asynchronously with 15s timeout limit
+    forkJoin({
+      geminiBriefing: this.aiService.getGeminiBriefing('Puri', 'PURI').pipe(
+        timeout(15000),
+        catchError(err => {
+          console.warn('Gemini Briefing timeout or error:', err);
+          return of(null);
+        })
+      ),
+      geminiHealth: this.aiService.getGeminiHealth().pipe(
+        catchError(err => {
+          return of({ status: 'unavailable', message: 'Gemini service offline', model: 'gemini-3.6-flash', fallback_active: true });
+        })
+      )
+    }).subscribe({
+      next: ({ geminiBriefing, geminiHealth }) => {
+        const geminiLatency = Math.round(performance.now() - tGeminiStart);
+        const totalTime = Math.round(performance.now() - t0);
+        this.geminiBriefingLatencyMs.set(geminiLatency);
+        this.totalDashboardTimeMs.set(totalTime);
+
+        if (geminiBriefing) {
+          this.geminiBriefing.set(geminiBriefing);
+        }
+        if (geminiHealth) {
+          this.geminiHealthStatus.set(geminiHealth);
+        }
+
+        this.geminiLoading.set(false);
+      },
+      error: () => {
+        this.geminiLoading.set(false);
+      }
+    });
+  }
+
 
   selectLocation(locationId: number): void {
     this.selectedLocationId.set(locationId);

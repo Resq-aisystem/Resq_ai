@@ -1,0 +1,18 @@
+# RESQ-AI Single-City MVP & Administrative Scope Configuration
+version: "2.0.0"
+default_mode: "CITY_MODE"  # Options: CITY_MODE, NATIONAL_GRID_MODE
+
+city_mvp:
+  city_name: "Puri"
+  state: "ODISHA"
+  administrative_district: "PURI"
+  latitude_bounds: [19.70, 20.00]
+  longitude_bounds: [85.70, 86.00]
+  centroid: [19.8135, 85.8312]
+  forecast_horizon_hours: 6
+  update_interval_minutes: 30
+  target_spatial_resolution_m: 100
+
+national_grid:
+  total_districts: 728
+  country: "INDIA"

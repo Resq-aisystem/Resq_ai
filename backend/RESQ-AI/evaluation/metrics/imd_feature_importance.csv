@@ -1,0 +1,15 @@
+Feature,Importance
+cumulative_normal_mm,0.1302611711430031
+daily_normal_mm,0.09481263972170972
+monthly_normal_mm,0.09408706263156551
+rolling_14d_max_mm_lag1,0.07890250463525705
+monthly_actual_mm_lag1,0.07647358253988872
+rolling_3d_max_mm_lag1,0.07550741730018018
+cumulative_actual_mm_lag1,0.0744719230231471
+rolling_7d_max_mm_lag1,0.06878484986093768
+rolling_3d_rainfall_mm_lag1,0.06464109406278316
+rolling_7d_rainfall_mm_lag1,0.06268497813205082
+rolling_14d_rainfall_mm_lag1,0.062450929363602456
+rolling_30d_rainfall_mm_lag1,0.05367867351706328
+consecutive_rainy_days_lag1,0.04269422102045788
+rolling_7d_rainy_days_count_lag1,0.0205489530483535

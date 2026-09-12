@@ -1,0 +1,105 @@
+{
+  "system_info": {
+    "platform": "RESQ-AI — Disaster Early Warning & Rescue Intelligence Platform",
+    "evaluation_date": "2026-09-12",
+    "evaluation_scope": "Full Multi-Module System Evaluation"
+  },
+  "imd_rainfall_severity_model": {
+    "model_artifact": "models/flood_risk/imd_baseline_model.pkl",
+    "algorithm": "RandomForestClassifier",
+    "hyperparameters": {
+      "n_estimators": 100,
+      "max_depth": 10,
+      "class_weight": "balanced",
+      "random_state": 42
+    },
+    "n_input_features": 14,
+    "target_variable": "rainfall_severity",
+    "target_type": "Multiclass Classification (LIGHT, MODERATE, HEAVY, EXTREME)",
+    "continuous_rainfall_regression_accuracy": null,
+    "regression_note": "Current IMD model predicts rainfall severity classes, not continuous rainfall amount in mm.",
+    "temporal_test_split": {
+      "train_period": "dates <= 2026-09-04",
+      "test_period": "dates >= 2026-09-05",
+      "test_sample_count": 5093
+    },
+    "metrics": {
+      "accuracy": 0.680541920282741,
+      "balanced_accuracy": 0.45112781954887216,
+      "weighted_precision": 0.7096547143922649,
+      "weighted_recall": 0.680541920282741,
+      "weighted_f1": 0.6886780362879555,
+      "macro_precision": 0.43843843843843844,
+      "macro_recall": 0.45112781954887216,
+      "macro_f1": 0.43980582524271845,
+      "cohen_kappa": 0.327188,
+      "matthews_corrcoef": 0.334451
+    },
+    "per_class_metrics": {
+      "LIGHT": {"precision": 0.81, "recall": 0.69, "f1_score": 0.75, "support": 3437},
+      "MODERATE": {"precision": 0.50, "recall": 0.66, "f1_score": 0.57, "support": 1640},
+      "HEAVY": {"precision": 0.00, "recall": 0.00, "f1_score": 0.00, "support": 16},
+      "EXTREME": {"precision": 0.00, "recall": 0.00, "f1_score": 0.00, "support": 0}
+    },
+    "confusion_matrix": {
+      "class_order": ["LIGHT", "MODERATE", "HEAVY", "EXTREME"],
+      "matrix": [
+        [2384, 1048, 5, 0],
+        [555, 1082, 3, 0],
+        [1, 15, 0, 0],
+        [0, 0, 0, 0]
+      ]
+    }
+  },
+  "risk_engine": {
+    "predictive_accuracy": null,
+    "reason": "Risk Engine predictive accuracy: NOT ESTABLISHED because an independent current ground-truth target is unavailable.",
+    "evaluation_metrics": {
+      "district_coverage": "728 / 728 (100%)",
+      "score_bounds_compliance": "100%",
+      "evidence_quality_high_pct": "100%",
+      "deterministic_repeatability": "100%"
+    }
+  },
+  "priority_engine": {
+    "predictive_accuracy": null,
+    "reason": "Priority Engine accuracy: NOT ESTABLISHED; it is an operational ranking system rather than a supervised prediction model.",
+    "evaluation_metrics": {
+      "district_coverage": "728 / 728 (100%)",
+      "priority_score_bounds": "[22.34, 74.44]",
+      "level_distribution": {"P1": 9, "P2": 173, "P3": 454, "P4": 92},
+      "deterministic_repeatability": "100%",
+      "leakage_exclusion_audit": "PASSED (0 target variables used)"
+    }
+  },
+  "route_risk_engine": {
+    "predictive_accuracy": null,
+    "reason": "Route optimization accuracy: NOT ESTABLISHED because no independent ground-truth emergency route benchmark is available.",
+    "evaluation_metrics": {
+      "osrm_graph_routing_success_rate": "100%",
+      "mode_supported": ["FASTEST", "SAFEST", "BALANCED"],
+      "score_bounds_compliance": "100%",
+      "deterministic_repeatability": "100%"
+    }
+  },
+  "action_plan_engine": {
+    "llm_accuracy": null,
+    "reason": "LLM response accuracy: NOT MEASURED because no authenticated LLM evaluation set was available.",
+    "evaluation_metrics": {
+      "deterministic_fallback_success_rate": "100%",
+      "schema_contract_validation_rate": "100%",
+      "unsupported_claim_rejection_guardrail": "PASSED"
+    }
+  },
+  "data_quality_and_leakage_audit": {
+    "total_districts_matched": 728,
+    "district_key_match_rate": "100%",
+    "target_leakage_status": "PASSED (Zero leakage in active predictor context)"
+  },
+  "repository_test_suite": {
+    "total_tests": 84,
+    "passed": 84,
+    "failed": 0,
+    "errors": 0
+  }
+}

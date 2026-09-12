@@ -1,0 +1,57 @@
+{
+  "model_artifact": "models/flood_risk/imd_baseline_model.pkl",
+  "actual_model_class": "sklearn.ensemble._forest.RandomForestClassifier",
+  "hyperparameters": {
+    "n_estimators": 100,
+    "max_depth": 10,
+    "class_weight": "balanced",
+    "random_state": 42
+  },
+  "input_feature_count": 14,
+  "classes": ["EXTREME", "HEAVY", "LIGHT", "MODERATE"],
+  "temporal_split": {
+    "train_period": "dates <= 2026-09-04",
+    "test_period": "dates >= 2026-09-05",
+    "test_sample_count": 5093
+  },
+  "reproduced_metrics": {
+    "accuracy": 0.680541920282741,
+    "weighted_precision": 0.7096547143922649,
+    "weighted_recall": 0.680541920282741,
+    "weighted_f1": 0.6886780362879555,
+    "macro_precision": 0.43843843843843844,
+    "macro_recall": 0.45112781954887216,
+    "macro_f1": 0.43980582524271845
+  },
+  "original_metrics": {
+    "accuracy": 0.6805,
+    "weighted_precision": 0.7097,
+    "weighted_recall": 0.6805,
+    "weighted_f1": 0.6887,
+    "macro_precision": 0.4384,
+    "macro_recall": 0.4511,
+    "macro_f1": 0.4398
+  },
+  "metric_differences": {
+    "accuracy_diff": 0.0,
+    "weighted_precision_diff": 0.0,
+    "weighted_recall_diff": 0.0,
+    "weighted_f1_diff": 0.0,
+    "macro_precision_diff": 0.0,
+    "macro_recall_diff": 0.0,
+    "macro_f1_diff": 0.0
+  },
+  "confusion_matrix": {
+    "labels_order": ["LIGHT", "MODERATE", "HEAVY", "EXTREME"],
+    "matrix": [
+      [2384, 1048, 5, 0],
+      [555, 1082, 3, 0],
+      [1, 15, 0, 0],
+      [0, 0, 0, 0]
+    ]
+  },
+  "test_results": {
+    "imd_model_tests": "PASS (2/2)",
+    "complete_repository_tests": "PASS (80/80)"
+  }
+}

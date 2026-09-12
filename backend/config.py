@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./flood_response.db"
     
+    # Gemini Configuration
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.6-flash"
+    
     # CORS
     ALLOWED_ORIGINS: List[str] = [
         "http://localhost:3000",
@@ -29,7 +33,7 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     
     class Config:
-        env_file = ".env"
+        env_file = [".env", "backend/.env"]
         case_sensitive = True
 
 

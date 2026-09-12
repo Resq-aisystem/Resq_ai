@@ -1,0 +1,75 @@
+# RESQ-AI Emergency Priority Engine Configuration
+version: "1.0.0"
+engine_name: "EmergencyPriorityEngine"
+description: "Operational priority ranking engine combining situational risk with exposure, vulnerability, and historical priors."
+
+# Component Weights (Sum = 1.0)
+# Documented rationale:
+# - current_risk (0.45): High weight to situational hazard risk score from Risk Engine Layer 1-3.
+# - terrain_susceptibility (0.20): Weight for 30m GFSM land flood susceptibility rating.
+# - historical_recurrence (0.15): Weight for historical flood recurrence rate (IFI decoupled prior).
+# - hydrological_vulnerability (0.10): Weight for catchment runoff ratio and soil moisture saturation (CAMELS).
+# - multi_hazard_history (0.10): Weight for NASA GDIS historical multi-hazard frequency per decade.
+weights:
+  current_risk: 0.45
+  terrain_susceptibility: 0.20
+  historical_recurrence: 0.15
+  hydrological_vulnerability: 0.10
+  multi_hazard_history: 0.10
+
+# Bounded Priority Score (0-100) Levels & Thresholds
+thresholds:
+  P1:
+    min_score: 70.0
+    max_score: 100.0
+    label: "Immediate Attention"
+    description: "Highest operational priority district requiring immediate resource mobilization and active monitoring."
+  P2:
+    min_score: 50.0
+    max_score: 70.0
+    label: "High Priority"
+    description: "High priority district with elevated risk and significant vulnerability; prepare response teams."
+  P3:
+    min_score: 30.0
+    max_score: 50.0
+    label: "Monitor / Prepare"
+    description: "Moderate priority district requiring pre-positioning of resources and routine watch."
+  P4:
+    min_score: 0.0
+    max_score: 30.0
+    label: "Routine Monitoring"
+    description: "Standard baseline monitoring with low current situational urgency."
+
+# Vulnerability Flag Thresholds (Only supported by actual feature datasets)
+vulnerability_flag_rules:
+  HIGH_CURRENT_RISK:
+    feature: "risk_score"
+    threshold: 55.0
+    condition: "gte"
+  HIGH_FLOOD_SUSCEPTIBILITY:
+    feature: "gfsm_susceptibility_score"
+    threshold: 3.5
+    condition: "gte"
+  HIGH_HISTORICAL_FLOOD_RECURRENCE:
+    feature: "ifi_flood_recurrence_rate"
+    threshold: 3.0
+    condition: "gte"
+  HIGH_HYDROLOGICAL_VULNERABILITY:
+    feature: "camels_runoff_ratio"
+    threshold: 0.50
+    condition: "gte"
+  MULTI_HAZARD_HISTORY:
+    feature: "gdis_unique_disaster_types_count"
+    threshold: 2
+    condition: "gte"
+
+# Excluded Target Leakage Features (Strictly forbidden as priority predictors)
+excluded_leakage_features:
+  - "ifi_dfsi_score"
+  - "ifi_flooded_area_pct"
+  - "target_flooded_area_pct"
+  - "target_risk_level"
+  - "target_flood_risk_binary"
+  - "ifi_total_fatalities"
+  - "ifi_total_injured"
+  - "ifi_mean_flood_duration_days"

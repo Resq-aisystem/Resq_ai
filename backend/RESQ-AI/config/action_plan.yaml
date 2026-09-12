@@ -1,0 +1,38 @@
+# RESQ-AI Emergency Action Plan Generation Engine Configuration
+version: "1.0.0"
+engine_name: "GroundedActionPlanEngine"
+description: "Transforms verified structured RESQ-AI intelligence into explainable, grounded emergency action plans."
+
+# LLM Provider Configuration
+llm:
+  provider: "deterministic"  # Deterministic rule-based fallback mode
+  model_name: "gpt-4o-mini"
+  api_timeout_seconds: 10.0
+  temperature: 0.1
+  max_output_tokens: 800
+  retry_count: 1
+  api_key_env_var: "OPENAI_API_KEY"
+
+# Operational Pipeline Controls
+pipeline:
+  fallback_enabled: true
+  validation_enabled: true
+  unsupported_claim_guard_enabled: true
+
+# Guardrail Keywords (Triggers rejection if present in generated text)
+forbidden_claim_keywords:
+  - "guaranteed"
+  - "definitely"
+  - "certainly"
+  - "will flood"
+  - "will be safe"
+  - "road is blocked"
+  - "bridge is damaged"
+  - "casualties confirmed"
+  - "fatalities reported"
+  - "evacuation time of"
+
+# Mandatory Operational Disclaimers
+disclaimers:
+  - "The LLM does not generate the underlying risk, priority, or routing intelligence."
+  - "RESQ-AI action plans are decision-support outputs and should be reviewed by authorized emergency personnel."

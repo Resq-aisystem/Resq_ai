@@ -1,22 +1,33 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DisasterStateService } from '../../core/services/disaster-state.service';
+import { GeminiBriefingPanelComponent } from '../gemini-briefing/gemini-briefing-panel.component';
 
 @Component({
   selector: 'app-ai-action-plan',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, GeminiBriefingPanelComponent],
   template: `
     <div class="action-plan-container">
       <div class="plan-header">
         <div class="header-title-row">
           <span class="ai-spark-icon">🤖</span>
-          <h2 class="plan-title">GROUNDED DECISION INTELLIGENCE ACTION PLAN</h2>
+          <h2 class="plan-title">DECISION INTELLIGENCE & GEMINI BRIEFING</h2>
           <span class="grounded-badge font-mono">BACKEND VERIFIED</span>
         </div>
         <p class="plan-subtitle">
-          Structured operational directives grounded in authoritative hydrological models & backend alerts
+          Operational directives grounded in authoritative hydrological models & Google Gemini AI briefings
         </p>
+
+        <!-- Sub-Tab Selector -->
+        <div class="subtab-strip">
+          <button class="subtab-btn" [ngClass]="{'active': subTab() === 'gemini'}" (click)="subTab.set('gemini')">
+            ✨ GEMINI AI BRIEFING
+          </button>
+          <button class="subtab-btn" [ngClass]="{'active': subTab() === 'deterministic'}" (click)="subTab.set('deterministic')">
+            📋 GROUNDED ACTION PLAN
+          </button>
+        </div>
 
         <!-- Target Facility Header -->
         @if (state.selectedLocation(); as loc) {
@@ -30,117 +41,98 @@ import { DisasterStateService } from '../../core/services/disaster-state.service
         }
       </div>
 
+      @if (subTab() === 'gemini') {
+        <app-gemini-briefing-panel style="flex: 1; height: 100%; display: flex; flex-direction: column; overflow: hidden;"></app-gemini-briefing-panel>
+      } @else {
+
       <div class="plan-scrollable">
-        @if (state.selectedAlert(); as alert) {
-          <!-- Authoritative Justification Banner -->
+        @if (state.aiDecision()?.action_plan; as plan) {
+          <!-- Authoritative Grounding & Situation Summary -->
           <div class="justification-box">
             <div class="just-header">
-              <span class="just-tag">HYDROLOGIC GROUNDING & REASONING</span>
-              <span class="just-author font-mono">{{ alert.issued_by }}</span>
+              <span class="just-tag">RESQ-AI DETERMINISTIC ACTION PLAN</span>
+              <span class="just-author font-mono">District: {{ plan.district }} (Risk: {{ plan.risk.level }} / Priority: {{ plan.priority.level }})</span>
             </div>
-            <p class="just-text">{{ alert.justification }}</p>
+            <p class="just-text">{{ plan.situation_summary }}</p>
           </div>
 
           <!-- Structured Directive Cards -->
           <div class="directives-stack">
-            <!-- 1. Immediate Actions -->
+            <!-- 1. Immediate Recommended Actions -->
             <div class="directive-card card-immediate">
               <div class="d-header">
                 <span class="d-icon">🚨</span>
-                <span class="d-title">IMMEDIATE 0-60 MIN RESPONSE ACTIONS</span>
-                <span class="d-priority font-mono">PRIORITY 1</span>
+                <span class="d-title">RECOMMENDED OPERATIONAL ACTIONS</span>
+                <span class="d-priority font-mono">SCORE: {{ plan.priority.score }}</span>
               </div>
               <div class="d-content">
-                <p class="primary-directive">{{ alert.recommended_action }}</p>
                 <ul class="sub-directives">
-                  <li>Sound Code Red internal advisory throughout facility sectors.</li>
-                  <li>Activate on-duty emergency staffing roster and notify district dispatch.</li>
-                  <li>Verify auxiliary power generator switchboard elevation and fuel seals.</li>
+                  @for (action of plan.recommended_actions; track action) {
+                    <li>{{ action }}</li>
+                  }
                 </ul>
               </div>
             </div>
 
-            <!-- 2. Evacuation Guidance -->
+            <!-- 2. Evacuation & Route Guidance -->
             <div class="directive-card card-evac">
               <div class="d-header">
                 <span class="d-icon">🚌</span>
-                <span class="d-title">EVACUATION & PATIENT TRANSFER PROTOCOL</span>
-                <span class="d-priority font-mono">LOGISTICS</span>
+                <span class="d-title">EVACUATION & ROUTE GUIDANCE</span>
+                <span class="d-priority font-mono">MODE: {{ plan.route_recommendation.mode }}</span>
               </div>
               <div class="d-content">
                 <div class="evac-route-summary">
-                  <strong>Recommended Route:</strong> 
-                  {{ state.selectedRoute()?.name || 'Route Alpha (High-Ground Arterial Bypass)' }}
+                  <strong>Route Risk Score:</strong> {{ plan.route_recommendation.risk_score }} / 100
                 </div>
+                <p class="just-text">{{ plan.route_recommendation.explanation }}</p>
+              </div>
+            </div>
+
+            <!-- 3. Key Evidence -->
+            <div class="directive-card card-resources">
+              <div class="d-header">
+                <span class="d-icon">📊</span>
+                <span class="d-title">KEY EVIDENTIARY FACTORS</span>
+                <span class="d-priority font-mono">EVIDENCE QUALITY: {{ plan.evidence_quality }}</span>
+              </div>
+              <div class="d-content">
                 <ul class="sub-directives">
-                  <li>Transfer priority: ICU and high-acuity oxygen-dependent patients first.</li>
-                  <li>Deploy high-clearance emergency transit vehicles to avoid 0.4m water ingress.</li>
-                  <li>Destination staging at: <strong>{{ state.selectedDestination()?.name || 'Highland Regional Evacuation Haven' }}</strong>.</li>
+                  @for (evidence of plan.key_evidence; track evidence) {
+                    <li>{{ evidence }}</li>
+                  }
                 </ul>
               </div>
             </div>
 
-            <!-- 3. Resource & Staging Recommendations -->
-            <div class="directive-card card-resources">
-              <div class="d-header">
-                <span class="d-icon">📦</span>
-                <span class="d-title">RESOURCE & STAGING ALLOCATION</span>
-                <span class="d-priority font-mono">SUPPLY CHAIN</span>
-              </div>
-              <div class="d-content">
-                <div class="resource-pill-row">
-                  <span class="res-pill">💧 Clean Water: 1,200 gal/day</span>
-                  <span class="res-pill">⚡ Diesel Gen: 72hr Fuel Staged</span>
-                  <span class="res-pill">🚑 Ambulances: 4 Units</span>
-                  <span class="res-pill">🚤 Swift Water Rescue: 2 Crafts</span>
-                </div>
-                <p class="res-note">
-                  Staging location established at nearest high-ground arterial crossing outside the 100m flood polygon.
-                </p>
-              </div>
-            </div>
-
-            <!-- 4. Infrastructure & Telemetry Monitoring -->
+            <!-- 4. Monitoring Actions -->
             <div class="directive-card card-monitoring">
               <div class="d-header">
                 <span class="d-icon">📡</span>
-                <span class="d-title">INFRASTRUCTURE & WATER LEVEL MONITORING</span>
-                <span class="d-priority font-mono">TELEMETRY</span>
-              </div>
-              <div class="d-content">
-                <div class="telemetry-table font-mono">
-                  <div class="t-row">
-                    <span>Active Inundation Stage</span>
-                    <span class="text-critical">{{ alert.water_level || 0 }}m</span>
-                  </div>
-                  <div class="t-row">
-                    <span>Projected Crest / Peak</span>
-                    <span class="text-high">{{ alert.predicted_peak || 0 }}m</span>
-                  </div>
-                  <div class="t-row">
-                    <span>Floodwall Freeboard Clearance</span>
-                    <span>-0.45m (Overtopping Alert)</span>
-                  </div>
-                  <div class="t-row">
-                    <span>Telemetry Source</span>
-                    <span>USGS Basin Sensor Hub #08158000</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 5. Operational Precautions -->
-            <div class="directive-card card-precautions">
-              <div class="d-header">
-                <span class="d-icon">⚠️</span>
-                <span class="d-title">OPERATIONAL PRECAUTIONS & PERSONNEL SAFETY</span>
-                <span class="d-priority font-mono">SAFETY</span>
+                <span class="d-title">REQUIRED MONITORING ACTIONS</span>
+                <span class="d-priority font-mono">CONTINUOUS</span>
               </div>
               <div class="d-content">
                 <ul class="sub-directives">
-                  <li>Never permit light emergency vehicles or passenger cars through standing water &gt; 0.3m.</li>
-                  <li>Beware of submerged electrical transformers and downstream chemical runoff.</li>
-                  <li>Maintain continuous two-way VHF radio contact with Travis County EOC Command.</li>
+                  @for (mon of plan.monitoring_actions; track mon) {
+                    <li>{{ mon }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+
+            <!-- 5. System Limitations -->
+            <div class="directive-card card-precautions">
+              <div class="d-header">
+                <span class="d-icon">⚠️</span>
+                <span class="d-title">SYSTEM LIMITATIONS & SCIENTIFIC BOUNDARIES</span>
+                <span class="d-priority font-mono">DISCLAIMERS</span>
+              </div>
+              <div class="d-content">
+                <ul class="sub-directives">
+                  @for (lim of plan.limitations; track lim) {
+                    <li>{{ lim }}</li>
+                  }
                 </ul>
               </div>
             </div>
@@ -153,11 +145,35 @@ import { DisasterStateService } from '../../core/services/disaster-state.service
             </button>
           </div>
         } @else {
-          <div class="no-alert-state">
-            <p>Please select a facility with an active emergency alert to view its grounded action plan.</p>
-          </div>
+          @if (state.selectedAlert(); as alert) {
+            <!-- Fallback Alert Display -->
+            <div class="justification-box">
+              <div class="just-header">
+                <span class="just-tag">HYDROLOGIC GROUNDING & REASONING</span>
+                <span class="just-author font-mono">{{ alert.issued_by }}</span>
+              </div>
+              <p class="just-text">{{ alert.justification }}</p>
+            </div>
+
+            <div class="directives-stack">
+              <div class="directive-card card-immediate">
+                <div class="d-header">
+                  <span class="d-icon">🚨</span>
+                  <span class="d-title">IMMEDIATE RESPONSE ACTIONS</span>
+                </div>
+                <div class="d-content">
+                  <p class="primary-directive">{{ alert.recommended_action }}</p>
+                </div>
+              </div>
+            </div>
+          } @else {
+            <div class="no-alert-state">
+              <p>Please select a facility or wait for RESQ-AI decision intelligence load.</p>
+            </div>
+          }
         }
       </div>
+      }
     </div>
   `,
   styles: [`
@@ -448,11 +464,40 @@ import { DisasterStateService } from '../../core/services/disaster-state.service
       color: #64748b;
       font-size: 12px;
     }
+    .subtab-strip {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .subtab-btn {
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .subtab-btn:hover {
+      color: #f8fafc;
+      background: #334155;
+    }
+
+    .subtab-btn.active {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+    }
   `]
 })
 export class AiActionPlanComponent {
   readonly state = inject(DisasterStateService);
   readonly copied = signal<boolean>(false);
+  readonly subTab = signal<'gemini' | 'deterministic'>('gemini');
 
   copyActionPlan(): void {
     const loc = this.state.selectedLocation();

@@ -1,0 +1,82 @@
+{
+  "model_name": "IMD Rainfall Severity Baseline Model",
+  "model_type": "IMD_RAINFALL_SEVERITY_BASELINE",
+  "dataset_path": "C:\\Users\\pabbu\\Desktop\\RESQ-AI\\features\\rainfall\\imd_rainfall_features.csv",
+  "target_name": "rainfall_severity",
+  "train_size": 12364,
+  "test_size": 5093,
+  "split_method": "Temporal split (Train <= 2026-09-04, Test >= 2026-09-05)",
+  "feature_names": [
+    "daily_normal_mm",
+    "cumulative_normal_mm",
+    "monthly_normal_mm",
+    "rolling_3d_rainfall_mm_lag1",
+    "rolling_7d_rainfall_mm_lag1",
+    "rolling_14d_rainfall_mm_lag1",
+    "rolling_30d_rainfall_mm_lag1",
+    "rolling_3d_max_mm_lag1",
+    "rolling_7d_max_mm_lag1",
+    "rolling_14d_max_mm_lag1",
+    "consecutive_rainy_days_lag1",
+    "rolling_7d_rainy_days_count_lag1",
+    "cumulative_actual_mm_lag1",
+    "monthly_actual_mm_lag1"
+  ],
+  "metrics": {
+    "accuracy": 0.6805,
+    "precision_macro": 0.4384,
+    "recall_macro": 0.4511,
+    "f1_macro": 0.4398,
+    "precision_weighted": 0.7097,
+    "recall_weighted": 0.6805,
+    "f1_weighted": 0.6887,
+    "correct_predictions": 3466,
+    "incorrect_predictions": 1627
+  },
+  "class_distribution_train": {
+    "LIGHT": 7075,
+    "MODERATE": 5175,
+    "HEAVY": 104,
+    "EXTREME": 10
+  },
+  "class_distribution_test": {
+    "LIGHT": 3437,
+    "MODERATE": 1640,
+    "HEAVY": 16
+  },
+  "confusion_matrix": {
+    "labels": [
+      "LIGHT",
+      "MODERATE",
+      "HEAVY",
+      "EXTREME"
+    ],
+    "matrix": [
+      [
+        2384,
+        1048,
+        5,
+        0
+      ],
+      [
+        555,
+        1082,
+        3,
+        0
+      ],
+      [
+        1,
+        15,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0
+      ]
+    ]
+  },
+  "shap_status": "Not Available (ModuleNotFoundError: No module named 'shap')"
+}

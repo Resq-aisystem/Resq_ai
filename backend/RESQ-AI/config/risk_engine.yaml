@@ -1,0 +1,42 @@
+# RESQ-AI Production Risk Inference Engine Configuration
+version: "1.0.0"
+engine_name: "RESQ-AI Composite District Risk Intelligence Engine"
+
+# Transparent Multi-Layer Risk Scoring Weights (Must sum to 1.0)
+weights:
+  layer_1_rainfall_intelligence: 0.40
+  layer_2_susceptibility_hydrology: 0.30
+  layer_3_historical_evidence: 0.30
+
+# Explicit Risk Score Classification Thresholds (0 - 100)
+thresholds:
+  LOW: [0.0, 25.0]
+  MODERATE: [25.0, 55.0]
+  HIGH: [55.0, 80.0]
+  CRITICAL: [80.0, 100.0]
+
+# Excluded Target Leakage & Post-Event Impact Variables
+excluded_leakage_features:
+  - ifi_dfsi_score
+  - ifi_flooded_area_pct
+  - target_flooded_area_pct
+  - target_dfsi_score
+  - target_flood_risk_binary
+  - target_risk_level
+  - ifi_total_fatalities
+  - ifi_total_injured
+  - ifi_mean_flood_duration_days
+
+# Temporal Cutoffs & Prior Assumptions
+temporal_cutoffs:
+  gdis_max_year: 2018
+  ifi_max_year: 2023
+  camels_max_year: 2020
+  imd_monsoon_period: "2026-08-19 to 2026-09-11"
+
+# Evidence Quality Criteria
+evidence_quality_rules:
+  required_layers_count:
+    HIGH: 5
+    MEDIUM: 3
+    LOW: 1

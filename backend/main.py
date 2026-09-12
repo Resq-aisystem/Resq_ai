@@ -3,8 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 
+import sys
+from pathlib import Path
+
+# Add backend/RESQ-AI to sys.path for module resolution
+resq_ai_dir = Path(__file__).resolve().parent / "RESQ-AI"
+if str(resq_ai_dir) not in sys.path:
+    sys.path.insert(0, str(resq_ai_dir))
+
 from backend.config import settings
-from backend.routers import alerts, locations
+from backend.routers import alerts, locations, ai
 from backend.database import engine, Base
 
 # Configure logging
@@ -46,6 +54,8 @@ app.add_middleware(
 # Include routers
 app.include_router(alerts.router, prefix="/api/v1/alerts", tags=["alerts"])
 app.include_router(locations.router, prefix="/api/v1/locations", tags=["locations"])
+app.include_router(ai.router, prefix="/api/v1/ai", tags=["ai"])
+app.include_router(ai.router, prefix="/api/ai", tags=["ai-legacy"])
 
 
 @app.get("/")

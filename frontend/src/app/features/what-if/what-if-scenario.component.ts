@@ -12,7 +12,7 @@ import { AlertService } from '../../core/services/alert.service';
     <div class="scenario-container">
       <!-- Watermark Banner -->
       <div class="simulation-watermark-banner">
-        &#9888; SIMULATION / WHAT-IF SCENARIO &bull; NOT LIVE FORECAST &bull; STRESS TESTING ENGINE
+        &#9888; SCENARIO — NOT LIVE OBSERVATION &bull; STRESS TESTING SIMULATION ENGINE
       </div>
 
       <div class="scenario-header">

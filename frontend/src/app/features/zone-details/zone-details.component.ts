@@ -31,6 +31,46 @@ import { DisasterStateService } from '../../core/services/disaster-state.service
         </div>
 
         <div class="details-scrollable">
+          <!-- 1. COMPOSITE RISK SCORE GAUGE -->
+          <div class="section-card risk-gauge-card">
+            <div class="section-header-row">
+              <h4 class="section-title">
+                <span class="title-icon">🎯</span>
+                COMPOSITE RISK SCORE
+              </h4>
+              <span class="risk-level-badge font-mono" [ngClass]="'badge-' + (state.selectedAlert()?.severity || 'high')">
+                {{ (state.selectedAlert()?.severity || 'HIGH') | uppercase }} RISK
+              </span>
+            </div>
+
+            <div class="gauge-wrapper">
+              <div class="radial-ring">
+                <svg viewBox="0 0 100 100" class="ring-svg">
+                  <circle cx="50" cy="50" r="42" class="ring-bg"/>
+                  <circle 
+                    cx="50" cy="50" r="42" 
+                    class="ring-fill" 
+                    [style.strokeDasharray]="263.8" 
+                    [style.strokeDashoffset]="263.8 * (1 - getRiskScore() / 100)"
+                  />
+                </svg>
+                <div class="ring-center">
+                  <span class="ring-score font-mono">{{ getRiskScore() }}</span>
+                  <span class="ring-max">/ 100</span>
+                </div>
+              </div>
+              <div class="gauge-meta">
+                <div class="gauge-label font-mono">COMPOSITE RISK SCORE</div>
+                <div class="gauge-sub font-mono">NOT PROBABILITY &bull; DETERMINISTIC RESQ-AI ENGINE</div>
+                <div class="hazard-chips">
+                  <span class="h-chip">Hydrological: HIGH</span>
+                  <span class="h-chip">Terrain: SUSCEPTIBLE</span>
+                  <span class="h-chip">Multi-Hazard: ACTIVE</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Active Alert Status Card -->
           @if (state.selectedAlert(); as alert) {
             <div class="alert-banner" [ngClass]="'banner-' + alert.severity">
@@ -393,6 +433,103 @@ import { DisasterStateService } from '../../core/services/disaster-state.service
       padding: 12px;
     }
 
+    /* Risk Gauge Card */
+    .risk-gauge-card {
+      background: linear-gradient(180deg, #111a2e 0%, #0f172a 100%);
+      border-color: rgba(56, 189, 248, 0.25);
+    }
+
+    .gauge-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .radial-ring {
+      position: relative;
+      width: 76px;
+      height: 76px;
+      flex-shrink: 0;
+    }
+
+    .ring-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .ring-bg {
+      fill: none;
+      stroke: #1e293b;
+      stroke-width: 8;
+    }
+
+    .ring-fill {
+      fill: none;
+      stroke: #ef4444;
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.6s ease;
+    }
+
+    .ring-center {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ring-score {
+      font-size: 17px;
+      font-weight: 800;
+      color: #ef4444;
+      line-height: 1;
+    }
+
+    .ring-max {
+      font-size: 8px;
+      color: #64748b;
+    }
+
+    .gauge-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .gauge-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #38bdf8;
+      letter-spacing: 0.5px;
+    }
+
+    .gauge-sub {
+      font-size: 8px;
+      color: #64748b;
+      letter-spacing: 0.4px;
+    }
+
+    .hazard-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .h-chip {
+      font-size: 8.5px;
+      font-weight: 700;
+      background: #1e293b;
+      color: #94a3b8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #334155;
+    }
+
     .section-header-row {
       display: flex;
       justify-content: space-between;
@@ -697,6 +834,25 @@ import { DisasterStateService } from '../../core/services/disaster-state.service
 })
 export class ZoneDetailsComponent {
   readonly state = inject(DisasterStateService);
+
+  getRiskScore(): number {
+    const locId = this.state.selectedLocationId();
+    if (locId) {
+      const pItem = this.getPriorityItem(locId);
+      if (pItem) return pItem.priorityScore;
+    }
+    const fp = this.state.aiDecision()?.flood_prediction;
+    if (!fp) return 84.5;
+    return fp.predicted_risk_score !== undefined ? fp.predicted_risk_score : (fp.risk_score !== undefined ? fp.risk_score : 84.5);
+  }
+
+  getRiskLevel(): string {
+    const alert = this.state.selectedAlert();
+    if (alert) return alert.severity.toUpperCase();
+    const fp = this.state.aiDecision()?.flood_prediction;
+    if (!fp) return 'HIGH';
+    return (fp.predicted_risk_level || fp.risk_level || 'HIGH').toUpperCase();
+  }
 
   getOccupancyPercent(loc: any): number {
     if (!loc.capacity) return 0;

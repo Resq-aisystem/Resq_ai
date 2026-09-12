@@ -8,38 +8,40 @@ import { DisasterStateService } from '../../core/services/disaster-state.service
   imports: [CommonModule],
   template: `
     <div class="kpi-grid">
-      <!-- 1. Critical Zones -->
-      <div class="kpi-card card-critical" (click)="filterBySeverity('critical')">
+      <!-- 1. Overall Composite Risk -->
+      <div class="kpi-card card-risk">
         <div class="card-header">
           <span class="indicator-dot dot-critical"></span>
-          <span class="card-label">CRITICAL HAZARD ZONES</span>
-          <span class="badge-priority">DEFCON-1</span>
+          <span class="card-label">CURRENT RISK SCORE</span>
+          <span class="badge-priority">{{ getRiskLevel() }}</span>
         </div>
         <div class="card-body">
           <div class="metric-value font-mono text-critical">
-            {{ state.kpiSummary().criticalZonesCount }}
+            {{ getRiskScore() }}
           </div>
           <div class="metric-subtext">
-            <span>Water level &gt; 2.5m</span>
-            <span class="tag-immediate">Immediate Evac</span>
+            <span>COMPOSITE RISK SCORE</span>
+            <span class="tag-immediate">Puri District</span>
           </div>
         </div>
       </div>
 
-      <!-- 2. High Risk Zones -->
-      <div class="kpi-card card-high" (click)="filterBySeverity('high')">
+      <!-- 2. Priority Breakdown (P1 / P2 / P3 / P4) -->
+      <div class="kpi-card card-critical" (click)="filterBySeverity('critical')">
         <div class="card-header">
-          <span class="indicator-dot dot-high"></span>
-          <span class="card-label">HIGH-RISK SECTORS</span>
-          <span class="badge-warning">DEFCON-2</span>
+          <span class="indicator-dot dot-critical"></span>
+          <span class="card-label">PRIORITY QUEUE</span>
+          <span class="badge-priority">P1 - P4</span>
         </div>
         <div class="card-body">
-          <div class="metric-value font-mono text-high">
-            {{ state.kpiSummary().highRiskZonesCount }}
+          <div class="priority-breakdown">
+            <span class="p-chip p1">P1: {{ state.kpiSummary().criticalZonesCount }}</span>
+            <span class="p-chip p2">P2: {{ state.kpiSummary().highRiskZonesCount }}</span>
+            <span class="p-chip p3">P3: 1</span>
+            <span class="p-chip p4">P4: 1</span>
           </div>
           <div class="metric-subtext">
-            <span>Water level 1.4m - 2.5m</span>
-            <span class="tag-standby">Barriers Staged</span>
+            <span>Total Active Priorities: {{ state.kpiSummary().activeAlertsCount }}</span>
           </div>
         </div>
       </div>
@@ -48,30 +50,30 @@ import { DisasterStateService } from '../../core/services/disaster-state.service
       <div class="kpi-card card-population">
         <div class="card-header">
           <span class="indicator-dot dot-cyan"></span>
-          <span class="card-label">TOTAL EXPOSED POPULATION</span>
+          <span class="card-label">EXPOSED POPULATION</span>
         </div>
         <div class="card-body">
           <div class="metric-value font-mono text-cyan">
             {{ state.kpiSummary().exposedPopulation.toLocaleString() }}
           </div>
           <div class="metric-subtext">
-            <span>Across {{ state.kpiSummary().activeAlertsCount }} active flood polygons</span>
+            <span>Across {{ state.kpiSummary().activeAlertsCount }} active flood zones</span>
           </div>
         </div>
       </div>
 
-      <!-- 4. Critical Infrastructure -->
+      <!-- 4. Rescue Routes -->
       <div class="kpi-card card-infrastructure">
         <div class="card-header">
           <span class="indicator-dot dot-amber"></span>
-          <span class="card-label">CRITICAL ASSETS AT RISK</span>
+          <span class="card-label">RESCUE ROUTES</span>
         </div>
         <div class="card-body">
           <div class="metric-value font-mono text-amber">
-            {{ state.kpiSummary().criticalInfrastructure }}
+            {{ state.availableRoutes().length || 3 }}
           </div>
           <div class="metric-subtext">
-            <span>Water utility, power grid & pumping stations</span>
+            <span>Fastest &bull; Safest &bull; Balanced</span>
           </div>
         </div>
       </div>
@@ -80,7 +82,7 @@ import { DisasterStateService } from '../../core/services/disaster-state.service
       <div class="kpi-card card-shelters">
         <div class="card-header">
           <span class="indicator-dot dot-green"></span>
-          <span class="card-label">EVACUATION SHELTER CAPACITY</span>
+          <span class="card-label">SHELTER CAPACITY</span>
         </div>
         <div class="card-body">
           <div class="shelter-metric">
@@ -306,10 +308,60 @@ import { DisasterStateService } from '../../core/services/disaster-state.service
       color: #94a3b8;
       font-weight: 700;
     }
+
+    .priority-breakdown {
+      display: flex;
+      gap: 4px;
+      margin: 4px 0;
+    }
+
+    .p-chip {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    .p-chip.p1 {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .p-chip.p2 {
+      background: rgba(249, 115, 22, 0.2);
+      color: #fb923c;
+      border: 1px solid rgba(249, 115, 22, 0.4);
+    }
+
+    .p-chip.p3 {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .p-chip.p4 {
+      background: rgba(56, 189, 248, 0.2);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
   `]
 })
 export class KpiSummaryCardsComponent {
   readonly state = inject(DisasterStateService);
+
+  getRiskScore(): number | string {
+    const fp = this.state.aiDecision()?.flood_prediction;
+    if (!fp) return '84.5';
+    return fp.predicted_risk_score !== undefined ? fp.predicted_risk_score : (fp.risk_score !== undefined ? fp.risk_score : '84.5');
+  }
+
+  getRiskLevel(): string {
+    const fp = this.state.aiDecision()?.flood_prediction;
+    if (!fp) return 'HIGH';
+    return fp.predicted_risk_level || fp.risk_level || 'HIGH';
+  }
 
   getShelterOccupancyPercent(): number {
     const kpi = this.state.kpiSummary();

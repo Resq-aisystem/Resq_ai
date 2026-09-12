@@ -10,6 +10,7 @@ import { Subscription, interval } from 'rxjs';
   imports: [CommonModule],
   template: `
     <header class="header-container">
+      <!-- Left: Title & Operational Status -->
       <div class="brand-section">
         <div class="logo-badge">
           <svg class="shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -21,52 +22,80 @@ import { Subscription, interval } from 'rxjs';
         <div class="brand-titles">
           <div class="brand-name">
             <span class="brand-resq">RESQ</span><span class="brand-ai">-AI</span>
-            <span class="eoc-badge">DEFCON-2 ACTIVE</span>
+            <span class="eoc-badge">● SYSTEM OPERATIONAL</span>
           </div>
-          <div class="brand-subtitle">FLOOD EMERGENCY DECISION INTELLIGENCE COMMAND CENTER</div>
+          <div class="brand-subtitle">DISASTER RESPONSE INTELLIGENCE COMMAND CENTER</div>
         </div>
       </div>
 
-      <!-- Center: Event Status Banner -->
-      <div class="incident-status-pill">
-        <div class="pulse-dot"></div>
+      <!-- Center: Real-Time Telemetry Refresh & Status Bar -->
+      <div class="incident-status-pill" [ngClass]="{'status-warn': state.isConnectionLost(), 'status-sync': state.isSyncing()}">
+        <div class="pulse-dot" [ngClass]="{'dot-sync': state.isSyncing(), 'dot-offline': state.isConnectionLost()}"></div>
         <div class="incident-info">
-          <span class="incident-label">REGIONAL FLASH FLOOD INCIDENT:</span>
-          <span class="incident-basin">COLORADO RIVER & RED RIVER TRIBUTARY BASIN</span>
+          @if (state.isConnectionLost()) {
+            <span class="status-alert">CONNECTION LOST — DISPLAYING LAST KNOWN DATA</span>
+          } @else if (state.isSyncing()) {
+            <span class="status-active">SYNCING LIVE DATA...</span>
+          } @else {
+            <span class="status-active">LIVE TELEMETRY ACTIVE</span>
+          }
         </div>
-        <span class="incident-window">6-HR PREDICTIVE WINDOW</span>
+        <div class="refresh-meta font-mono">
+          <span class="meta-item">LAST UPDATED: {{ state.lastUpdatedTimestamp() || 'AWAITING DATA' }}</span>
+          <span class="meta-divider">|</span>
+          <span class="meta-item">NEXT UPDATE IN: {{ state.nextUpdateCountdown() }}s</span>
+        </div>
       </div>
 
       <!-- Right: Telemetry, Clock & Backend Health -->
       <div class="controls-section">
-        <!-- Live UTC Clock -->
+        <!-- Live Clock -->
         <div class="clock-display">
-          <span class="clock-label">EOC LOCAL TIME</span>
+          <span class="clock-label">COMMAND TIME</span>
           <span class="clock-value font-mono">{{ currentTime() }}</span>
         </div>
 
-        <!-- Backend Health Indicator -->
-        <div class="health-indicator" [ngClass]="{'health-online': isBackendOnline(), 'health-offline': !isBackendOnline()}">
+        <!-- API Health Indicator -->
+        <div class="health-indicator" [ngClass]="{'health-online': isBackendOnline(), 'health-offline': !isBackendOnline()}" title="FastAPI Backend Connection Status">
           <span class="status-dot"></span>
           <div class="health-meta">
-            <span class="health-status">{{ isBackendOnline() ? 'API OPERATIONAL' : 'API DISCONNECTED' }}</span>
+            <span class="health-status">{{ isBackendOnline() ? 'API LIVE' : 'API OFFLINE' }}</span>
             <span class="health-port font-mono">PORT 8000</span>
           </div>
         </div>
 
-        <!-- Actions -->
-        <button class="btn-refresh" (click)="refreshData()" [disabled]="state.loading()" title="Reload live data from backend">
-          <svg class="icon-svg" [ngClass]="{'spinning': state.loading()}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <!-- RESQ-AI Engine Health Indicator -->
+        <div class="health-indicator" [ngClass]="{'health-online': state.aiHealthStatus()?.status === 'healthy', 'health-offline': state.aiHealthStatus()?.status !== 'healthy'}" title="RESQ-AI Numerical Engines Status">
+          <span class="status-dot"></span>
+          <div class="health-meta">
+            <span class="health-status">{{ state.aiHealthStatus()?.status === 'healthy' ? 'ENGINE ONLINE' : 'ENGINE ERROR' }}</span>
+            <span class="health-port font-mono">DETERMINISTIC</span>
+          </div>
+        </div>
+
+        <!-- Gemini AI Health Indicator -->
+        <div class="health-indicator" [ngClass]="{'health-online': state.geminiHealthStatus()?.status === 'configured', 'health-offline': state.geminiHealthStatus()?.status !== 'configured'}" title="Google Gemini Briefing Coordinator Status">
+          <span class="status-dot"></span>
+          <div class="health-meta">
+            <span class="health-status">{{ state.geminiHealthStatus()?.status === 'configured' ? 'GEMINI ONLINE' : 'GEMINI FALLBACK' }}</span>
+            <span class="health-port font-mono">3.6-FLASH</span>
+          </div>
+        </div>
+
+        <!-- Refresh Button -->
+        <button class="btn-refresh" (click)="refreshData()" [disabled]="state.isSyncing()" title="Sync live data from backend immediately">
+          <svg class="icon-svg" [ngClass]="{'spinning': state.isSyncing()}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
           </svg>
-          <span>SYNC</span>
+          <span>REFRESH</span>
         </button>
 
+        <!-- Simulation Button -->
         <button 
           class="btn-simulation" 
           [ngClass]="{'active': state.isSimulationActive()}" 
           (click)="toggleSimulationTab()"
-          title="Toggle What-If Scenario Simulation Mode"
+          title="Toggle What-If Scenario Simulator"
         >
           <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M2 12h5l3 8 4-16 3 8h5"/>
@@ -139,19 +168,18 @@ import { Subscription, interval } from 'rxjs';
     }
 
     .eoc-badge {
-      font-size: 10px;
+      font-size: 9.5px;
       font-weight: 700;
-      color: #ef4444;
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      padding: 1px 6px;
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      padding: 1px 7px;
       border-radius: 4px;
-      letter-spacing: 0.8px;
-      animation: pulse-critical 2.5s infinite;
+      letter-spacing: 0.6px;
     }
 
     .brand-subtitle {
-      font-size: 9.5px;
+      font-size: 9px;
       color: #64748b;
       letter-spacing: 1px;
       font-weight: 600;
@@ -161,36 +189,70 @@ import { Subscription, interval } from 'rxjs';
     .incident-status-pill {
       display: flex;
       align-items: center;
-      gap: 10px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid #334155;
-      padding: 6px 14px;
+      gap: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #1e293b;
+      padding: 6px 16px;
       border-radius: 30px;
+      transition: all 0.3s;
+    }
+
+    .incident-status-pill.status-sync {
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+    }
+
+    .incident-status-pill.status-warn {
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
     }
 
     .pulse-dot {
-      width: 9px;
-      height: 9px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      background: #f97316;
-      box-shadow: 0 0 8px #f97316;
-      animation: pulse-critical 1.8s infinite;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    .dot-sync {
+      background: #38bdf8 !important;
+      box-shadow: 0 0 8px #38bdf8 !important;
+    }
+
+    .dot-offline {
+      background: #ef4444 !important;
+      box-shadow: 0 0 8px #ef4444 !important;
     }
 
     .incident-info {
-      font-size: 12px;
+      font-size: 11.5px;
       display: flex;
       gap: 6px;
     }
 
-    .incident-label {
-      color: #94a3b8;
-      font-weight: 600;
+    .status-active {
+      color: #38bdf8;
+      font-weight: 700;
+      letter-spacing: 0.5px;
     }
 
-    .incident-basin {
-      color: #f8fafc;
+    .status-alert {
+      color: #f87171;
       font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .refresh-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      color: #94a3b8;
+    }
+
+    .meta-divider {
+      color: #334155;
     }
 
     .incident-window {

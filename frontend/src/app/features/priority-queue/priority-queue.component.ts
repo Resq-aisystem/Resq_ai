@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DisasterStateService } from '../../core/services/disaster-state.service';
 import { PriorityQueueItem } from '../../core/models/priority.model';
@@ -23,6 +23,17 @@ import { AlertSeverity } from '../../core/models/alert.model';
           Explainable Multi-Factor Ranking &bull; Risk &bull; Exposure &bull; Capacity
         </p>
 
+        <!-- Search & Filter Controls Bar -->
+        <div class="search-filter-bar">
+          <input 
+            type="text" 
+            class="search-input font-mono" 
+            placeholder="Search location, zone, or reason..." 
+            [value]="searchTerm()" 
+            (input)="onSearchInput($event)"
+          />
+        </div>
+
         <!-- Filter Chips -->
         <div class="filter-chips">
           <button 
@@ -37,21 +48,21 @@ import { AlertSeverity } from '../../core/models/alert.model';
             [ngClass]="{'chip-active': currentSeverityFilter() === 'critical'}"
             (click)="setSeverityFilter('critical')"
           >
-            CRITICAL ({{ countBySeverity('critical') }})
+            P1 CRITICAL ({{ countBySeverity('critical') }})
           </button>
           <button 
             class="chip-btn chip-high" 
             [ngClass]="{'chip-active': currentSeverityFilter() === 'high'}"
             (click)="setSeverityFilter('high')"
           >
-            HIGH ({{ countBySeverity('high') }})
+            P2 HIGH ({{ countBySeverity('high') }})
           </button>
           <button 
             class="chip-btn chip-medium" 
             [ngClass]="{'chip-active': currentSeverityFilter() === 'medium'}"
             (click)="setSeverityFilter('medium')"
           >
-            MED ({{ countBySeverity('medium') }})
+            P3 MED ({{ countBySeverity('medium') }})
           </button>
         </div>
       </div>
@@ -218,6 +229,28 @@ import { AlertSeverity } from '../../core/models/alert.model';
       font-size: 10px;
       color: #64748b;
       margin-bottom: 10px;
+    }
+
+    /* Search & Filter Controls */
+    .search-filter-bar {
+      margin-bottom: 8px;
+    }
+
+    .search-input {
+      width: 100%;
+      background: #141e33;
+      border: 1px solid #1e293b;
+      color: #f8fafc;
+      font-size: 10.5px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
     }
 
     /* Filter Chips */
@@ -567,6 +600,7 @@ import { AlertSeverity } from '../../core/models/alert.model';
 })
 export class PriorityQueueComponent {
   readonly state = inject(DisasterStateService);
+  readonly searchTerm = signal<string>('');
 
   currentSeverityFilter(): AlertSeverity | 'all' {
     return this.state.filterSeverity();
@@ -580,11 +614,30 @@ export class PriorityQueueComponent {
     return this.state.priorityQueue().filter(i => i.priorityLevel === sev).length;
   }
 
+  onSearchInput(event: Event): void {
+    const val = (event.target as HTMLInputElement).value || '';
+    this.searchTerm.set(val);
+  }
+
   filteredItems(): PriorityQueueItem[] {
     const filter = this.state.filterSeverity();
-    const items = this.state.priorityQueue();
-    if (filter === 'all') return items;
-    return items.filter(i => i.priorityLevel === filter);
+    const query = this.searchTerm().toLowerCase().trim();
+    let items = this.state.priorityQueue();
+
+    if (filter !== 'all') {
+      items = items.filter(i => i.priorityLevel === filter);
+    }
+
+    if (query) {
+      items = items.filter(i => 
+        i.location.name.toLowerCase().includes(query) ||
+        i.location.type.toLowerCase().includes(query) ||
+        i.priorityReason.toLowerCase().includes(query) ||
+        i.alert.title.toLowerCase().includes(query)
+      );
+    }
+
+    return items;
   }
 
   selectItem(item: PriorityQueueItem): void {

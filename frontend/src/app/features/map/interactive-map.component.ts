@@ -39,23 +39,23 @@ import { RouteOption } from '../../core/models/route.model';
         </div>
         <div class="legend-items">
           <div class="legend-col">
-            <span class="legend-subhead">SEVERITY / FLOOD STAGE</span>
-            <div class="legend-row"><span class="legend-color bg-critical"></span> Critical (&gt; 2.5m)</div>
-            <div class="legend-row"><span class="legend-color bg-high"></span> High (1.4m - 2.5m)</div>
-            <div class="legend-row"><span class="legend-color bg-medium"></span> Medium (0.7m - 1.4m)</div>
-            <div class="legend-row"><span class="legend-color bg-low"></span> Low (&lt; 0.7m)</div>
+            <span class="legend-subhead">RISK LEVEL</span>
+            <div class="legend-row"><span class="legend-color bg-critical"></span> CRITICAL (&gt; 2.5m)</div>
+            <div class="legend-row"><span class="legend-color bg-high"></span> HIGH (1.4m - 2.5m)</div>
+            <div class="legend-row"><span class="legend-color bg-medium"></span> MODERATE (0.7m - 1.4m)</div>
+            <div class="legend-row"><span class="legend-color bg-low"></span> LOW (&lt; 0.7m)</div>
           </div>
           <div class="legend-col">
-            <span class="legend-subhead">FACILITY ASSETS</span>
+            <span class="legend-subhead">CRITICAL FACILITIES</span>
             <div class="legend-row"><span class="icon-sq icon-hosp">🏥</span> Hospital / Medical</div>
             <div class="legend-row"><span class="icon-sq icon-shlt">🛡️</span> Evacuation Haven</div>
-            <div class="legend-row"><span class="icon-sq icon-infr">⚙️</span> Utility / Drainage</div>
+            <div class="legend-row"><span class="icon-sq icon-infr">⚙️</span> Infrastructure</div>
           </div>
           <div class="legend-col">
-            <span class="legend-subhead">ROUTE RISK MATRIX</span>
-            <div class="legend-row"><span class="route-line line-safest"></span> Route Alpha (Safest)</div>
-            <div class="legend-row"><span class="route-line line-balanced"></span> Route Bravo (Balanced)</div>
-            <div class="legend-row"><span class="route-line line-fastest"></span> Route Charlie (Fastest)</div>
+            <span class="legend-subhead">RESCUE ROUTES</span>
+            <div class="legend-row"><span class="route-line line-safest"></span> Safest Route</div>
+            <div class="legend-row"><span class="route-line line-balanced"></span> Balanced Route</div>
+            <div class="legend-row"><span class="route-line line-fastest"></span> Fastest Route</div>
           </div>
         </div>
       </div>
@@ -315,10 +315,10 @@ export class InteractiveMapComponent implements OnInit, AfterViewInit, OnDestroy
       attributionControl: false
     });
 
-    // Dark Matter CartoDB Basemap
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      subdomains: 'abcd'
+    // Premium Dark Tactical Basemap (Esri World Dark Gray Canvas - No API Key Required)
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 16,
+      attribution: 'Tiles &copy; Esri'
     }).addTo(this.map);
 
     // Zoom control at top-right below reset button

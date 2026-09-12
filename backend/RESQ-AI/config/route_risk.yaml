@@ -1,0 +1,54 @@
+# RESQ-AI Route Risk & Rescue Routing Engine Configuration
+version: "1.0.0"
+engine_name: "RescueRoutingEngine"
+description: "Evaluates candidate road routes combining OSRM graph routing with RESQ-AI district hazard intelligence."
+
+# OSRM Service Settings
+osrm:
+  base_url: "http://router.project-osrm.org"
+  profile: "driving"
+  timeout_seconds: 5.0
+  max_distance_km: 2000.0
+  max_duration_minutes: 2400.0
+  request_alternatives: true
+
+# Operational Route Modes Weights
+# FASTEST: Primary focus on travel duration/distance (0.80 time / 0.20 risk)
+# SAFEST: Primary focus on minimizing hazard exposure (0.20 time / 0.80 risk)
+# BALANCED: Equal trade-off between travel duration and hazard exposure (0.50 time / 0.50 risk)
+mode_weights:
+  FASTEST:
+    time_weight: 0.80
+    risk_weight: 0.20
+  SAFEST:
+    time_weight: 0.20
+    risk_weight: 0.80
+  BALANCED:
+    time_weight: 0.50
+    risk_weight: 0.50
+
+# Route Segment Hazard Risk Component Weights (Sum = 1.0)
+# Documented rationale:
+# - current_hazard_risk (0.40): Current weather-driven hazard risk score from Risk Engine Layer 1-3.
+# - terrain_susceptibility (0.25): GFSM 30m terrain flood susceptibility rating (internal ordinal scaling 1-5).
+# - historical_flood_recurrence (0.15): Historical flood recurrence rate from IFI decoupled prior.
+# - hydrological_vulnerability (0.10): CAMELS runoff ratio and soil moisture saturation.
+# - multi_hazard_history (0.10): NASA GDIS historical disaster frequency per decade.
+risk_component_weights:
+  current_hazard_risk: 0.40
+  terrain_susceptibility: 0.25
+  historical_flood_recurrence: 0.15
+  hydrological_vulnerability: 0.10
+  multi_hazard_history: 0.10
+
+# Bounded Risk Level Thresholds
+risk_thresholds:
+  LOW: [0.0, 25.0]
+  MODERATE: [25.0, 55.0]
+  HIGH: [55.0, 80.0]
+  CRITICAL: [80.0, 100.0]
+
+# Fallback & Safety Defaults
+fallback:
+  enable_spatial_nearest_district: true
+  default_risk_score: 35.0
